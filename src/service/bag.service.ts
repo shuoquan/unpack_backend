@@ -4,6 +4,7 @@ import { getManager, In, Repository } from 'typeorm';
 import { Bag } from '../database/bag.entity';
 import { TypeEnum, UnpackBoxInfo } from '../database/unpack_box_info.entity';
 import { BagInfoDto } from '../dto/bagInfo.dto';
+import { SocketServerService } from './socketServer.service';
 
 @Injectable()
 export class BagService {
@@ -12,6 +13,7 @@ export class BagService {
     private readonly bagRepository: Repository<Bag>,
     @InjectRepository(UnpackBoxInfo)
     private readonly unpackBoxInfoRepository: Repository<UnpackBoxInfo>,
+    private readonly socketServerService: SocketServerService,
   ) {}
   async uploadBagInfo(bagInfoDto: BagInfoDto) {
     const {
@@ -65,6 +67,7 @@ export class BagService {
           }),
         );
       }
+      this.socketServerService.broadcastNewBagId(bagInfo.id);
     });
   }
 
@@ -98,7 +101,7 @@ export class BagService {
       count += 1;
       params.push(new Date(endTime));
     }
-    sql += ` order by id desc limit ${pageSize}`;
+    sql += ` order by id limit ${pageSize}`;
     const bagList = await this.bagRepository.query(sql, params);
     const unpackBoxInfoList = bagList.length
       ? await this.unpackBoxInfoRepository.find({
@@ -115,6 +118,7 @@ export class BagService {
     return bagList.map((v) => {
       return {
         ...v,
+        type,
         unpackBoxInfoList: unpackBoxInfoMap[v.id],
       };
     });

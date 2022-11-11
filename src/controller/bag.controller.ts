@@ -20,13 +20,8 @@ export class BagController {
     @Query('ps') pageSize: number,
     @Query('start') startTime: number,
     @Query('end') endTime: number,
+    @Query('order') order: number,
   ) {
-    return this.bagService.getBagList(
-      bagId,
-      type || 0,
-      pageSize || 1,
-      startTime,
-      endTime,
-    );
+    return this.bagService.getBagList(bagId, type || 0, pageSize || 1, startTime, endTime, order);
   }
 }

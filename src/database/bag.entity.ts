@@ -112,4 +112,12 @@ export class Bag {
     comment: '记录创建时间',
   })
   createAt: Date;
+
+  @Column({
+    name: 'origin_bag_id',
+    type: 'int',
+    default: 0,
+    comment: '原始包裹id',
+  })
+  originBagId: number;
 }

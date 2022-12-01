@@ -1,14 +1,16 @@
-import { Body, Controller, Get, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { BagService } from '../service/bag.service';
 import { BagInfoDto } from '../dto/bagInfo.dto';
 
 @Controller('bag')
 export class BagController {
+  private readonly logger = new Logger('bagController');
   constructor(private readonly bagService: BagService) {}
 
   // 上报包图关联信息
   @Post('/')
   async uploadBagInfo(@Body('') bagInfoDto: BagInfoDto) {
+    this.logger.log(JSON.stringify(bagInfoDto), '上报包信息');
     return this.bagService.uploadBagInfo(bagInfoDto);
   }
 

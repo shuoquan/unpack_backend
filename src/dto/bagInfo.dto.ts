@@ -37,19 +37,17 @@ export class BagInfoDto {
   @IsNotEmpty({ message: 'block时间戳不能为空' })
   readonly blockTimeStamp: number;
 
-  @IsNotEmpty({ message: 'videoBlockName不能为空' })
-  readonly videoBlockName: string;
+  @IsString()
+  readonly videoBlockName = '';
 
-  @IsNotEmpty({ message: 'videoBlockPath不能为空' })
-  readonly videoBlockPath: string;
-
-  @IsNumber()
-  @Min(0, { message: 'videoBlockWidth不能小于0' })
-  readonly videoBlockWidth: number;
+  @IsString()
+  readonly videoBlockPath = '';
 
   @IsNumber()
-  @Min(0, { message: 'videoBlockHeight不能小于0' })
-  readonly videoBlockHeight: number;
+  readonly videoBlockWidth = 0;
+
+  @IsNumber()
+  readonly videoBlockHeight = 0;
 
   @IsArray()
   @ArrayNotEmpty({ message: '包裹坐标不能为空' })
@@ -57,4 +55,7 @@ export class BagInfoDto {
 
   @IsArray()
   readonly unpackBoxList: UnpackBoxInfo[] = [];
+
+  @IsNumber()
+  readonly bagId = 0;
 }

@@ -31,6 +31,7 @@ export class BagService {
       videoBlockHeight,
       videoBlockWidth,
       unpackBoxList,
+      bagId,
     } = bagInfoDto;
     if (blockTimeStamp.toString().length !== 13) throw new HttpException('blockTimeStamp参数错误(长度不为13)', 400);
     if (bagCoordinate.length !== 4) throw new HttpException('包裹坐标参数错误', 400);
@@ -39,36 +40,57 @@ export class BagService {
     const x1 = Math.max(bagCoordinate[0], bagCoordinate[2]);
     const y1 = Math.max(bagCoordinate[1], bagCoordinate[3]);
     await getManager().transaction(async manager => {
-      const bagInfo = await manager.save(Bag, {
-        device,
+      const existBagInfo = await manager.findOne(Bag, {
+        originBagId: bagId,
         blockName,
-        blockPath,
-        blockWidth,
-        blockHeight,
-        blockCreateAt: new Date(blockTimeStamp),
-        blockId,
-        videoBlockHeight,
-        videoBlockWidth,
-        videoBlockName,
-        videoBlockPath,
-        createAt: new Date(),
-        bagCoordinate: `(${x0 || 0}, ${y0 || 0}),(${x1 || 0}, ${y1 || 0})`,
       });
-      if ((unpackBoxList || []).length) {
-        await manager.save(
-          UnpackBoxInfo,
-          unpackBoxList.map(v => {
-            return {
-              categoryId: v.categoryId || 0,
-              categoryName: v.categoryName || '',
-              bagId: bagInfo.id,
-              type: v.box.length > 2 ? TypeEnum.review : TypeEnum.detect,
-              box: `{"(${v.box.map(point => `(${point.join(',')})`)})"}`,
-            };
-          }),
+      if (existBagInfo) {
+        await manager.update(
+          Bag,
+          {
+            id: existBagInfo.id,
+          },
+          {
+            videoBlockName,
+            videoBlockPath,
+            videoBlockHeight,
+            videoBlockWidth,
+          },
         );
+        this.socketServerService.broadcastNewBagId(existBagInfo.id);
+      } else {
+        const bagInfo = await manager.save(Bag, {
+          device,
+          blockName,
+          blockPath,
+          blockWidth,
+          blockHeight,
+          videoBlockName: videoBlockName || '',
+          videoBlockPath: videoBlockPath || '',
+          videoBlockHeight: (videoBlockHeight || 0) <= 0 ? 0 : videoBlockHeight,
+          videoBlockWidth: (videoBlockWidth || 0) <= 0 ? 0 : videoBlockWidth,
+          blockCreateAt: new Date(blockTimeStamp),
+          blockId,
+          createAt: new Date(),
+          bagCoordinate: `(${x0 || 0}, ${y0 || 0}),(${x1 || 0}, ${y1 || 0})`,
+          originBagId: bagId,
+        });
+        if ((unpackBoxList || []).length) {
+          await manager.save(
+            UnpackBoxInfo,
+            unpackBoxList.map(v => {
+              return {
+                categoryId: v.categoryId || 0,
+                categoryName: v.categoryName || '',
+                bagId: bagInfo.id,
+                type: v.box.length > 2 ? TypeEnum.review : TypeEnum.detect,
+                box: `{"(${v.box.map(point => `(${point.join(',')})`)})"}`,
+              };
+            }),
+          );
+        }
+        this.socketServerService.broadcastNewBagId(bagInfo.id);
       }
-      this.socketServerService.broadcastNewBagId(bagInfo.id);
     });
   }
 

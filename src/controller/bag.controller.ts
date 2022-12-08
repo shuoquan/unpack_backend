@@ -1,6 +1,10 @@
 import { Body, Controller, Get, Logger, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { BagService } from '../service/bag.service';
 import { BagInfoDto } from '../dto/bagInfo.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { BagRegisterInfoDto } from '../dto/bagRegisterInfo.dto';
+import { UserDecorator } from '../decorator/user.decorator';
+import { Account } from '../database/account.entity';
 
 @Controller('bag')
 export class BagController {
@@ -23,7 +27,35 @@ export class BagController {
     @Query('start') startTime: number,
     @Query('end') endTime: number,
     @Query('order') order: number,
+    @Query('cat') cat: string,
+    @Query('user') user: string,
+    @Query('auditor') auditor: string,
+    @Query('status') status: number,
   ) {
-    return this.bagService.getBagList(bagId, type || 0, pageSize || 1, startTime, endTime, order);
+    return this.bagService.getBagList(
+      bagId,
+      type || 0,
+      pageSize || 1,
+      startTime,
+      endTime,
+      order,
+      cat,
+      user,
+      auditor,
+      status,
+    );
+  }
+
+  // 上报开包登记信息
+  @UseGuards(AuthGuard('jwt'))
+  @Post('/register')
+  async uploadBagRegisterInfo(
+    @Body('bagUserPic') bagUserPic,
+    @Body('') bagRegisterInfoDto: BagRegisterInfoDto,
+    @UserDecorator() user: Account,
+  ) {
+    // this.logger.log(JSON.stringify(bagRegisterInfoDto), '上报开包登记信息');
+    // console.log(bagRegisterInfoDto, bagUserPic);
+    return this.bagService.uploadBagRegisterInfo(bagRegisterInfoDto, user, bagUserPic);
   }
 }

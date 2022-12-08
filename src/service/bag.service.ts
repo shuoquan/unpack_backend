@@ -1,11 +1,15 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getManager, In, Repository } from 'typeorm';
-import { Bag } from '../database/bag.entity';
+import { Bag, BagStatus } from '../database/bag.entity';
 import { TypeEnum, UnpackBoxInfo } from '../database/unpack_box_info.entity';
 import { BagInfoDto } from '../dto/bagInfo.dto';
 import { SocketServerService } from './socketServer.service';
-import { timestamp } from 'rxjs';
+import { BagRegisterInfoDto } from '../dto/bagRegisterInfo.dto';
+import { Account } from '../database/account.entity';
+import { UnpackRecordInfo } from '../database/unpack_record_info.entity';
+import * as fs from 'fs';
+import * as moment from 'moment';
 
 @Injectable()
 export class BagService {
@@ -14,6 +18,8 @@ export class BagService {
     private readonly bagRepository: Repository<Bag>,
     @InjectRepository(UnpackBoxInfo)
     private readonly unpackBoxInfoRepository: Repository<UnpackBoxInfo>,
+    @InjectRepository(UnpackRecordInfo)
+    private readonly unpackRecordInfoRepository: Repository<UnpackRecordInfo>,
     private readonly socketServerService: SocketServerService,
   ) {}
   async uploadBagInfo(bagInfoDto: BagInfoDto) {
@@ -96,8 +102,19 @@ export class BagService {
 
   // type = 0 找对应的包, type=1 找这个包的后一个, type=-1 找这个包的前一个
   // order = -1 倒序
-  async getBagList(bagId: number, type = 0, pageSize = 1, startTime: number, endTime: number, order = -1) {
-    let sql = `select * from bag where 1 = 1`;
+  async getBagList(
+    bagId: number,
+    type = 0,
+    pageSize = 1,
+    startTime: number,
+    endTime: number,
+    order = -1,
+    cat = '',
+    user = '',
+    auditor = '',
+    status = -1,
+  ) {
+    let sql = ``;
     if (bagId && [-1, 0, 1].includes(type)) {
       if (type === -1) {
         sql += ` and id < ${bagId}`;
@@ -119,16 +136,46 @@ export class BagService {
       count += 1;
       params.push(new Date(endTime));
     }
+    // todo sql 注入检测
+    if (user) {
+      sql += ` and bag_user_name like '%${user}%'`;
+    }
+    if (auditor) {
+      sql += ` and unpack_auditor_name like '%${auditor}%'`;
+    }
+    if (cat) {
+      sql += ` and id in (select bag_id from unpack_record_info where category_name like '%${cat}%')`;
+    }
+    if (!isNaN(status) && status !== -1) {
+      sql += ` and status = $${count}`;
+      count += 1;
+      params.push(status);
+    }
+    const minBagId = await this.bagRepository.query(`select min(id) from bag where block_create_at > $1`, [
+      startTime ? new Date(startTime) : new Date(new Date().toLocaleDateString()),
+    ]);
     sql += ` order by id ${order === -1 ? 'DESC' : 'ASC'} limit ${pageSize}`;
-    const bagList = await this.bagRepository.query(sql, params);
-    const unpackBoxInfoList = bagList.length
-      ? await this.unpackBoxInfoRepository.find({
-          where: {
-            bagId: In(bagList.map(v => v.id)),
-          },
-        })
-      : [];
+    const bagList = await this.bagRepository.query('select * from bag where 1 = 1 ' + sql, params);
+    const [unpackBoxInfoList, unpackRecordList] = bagList.length
+      ? await Promise.all([
+          this.unpackBoxInfoRepository.find({
+            where: {
+              bagId: In(bagList.map(v => v.id)),
+            },
+          }),
+          this.unpackRecordInfoRepository.find({
+            where: {
+              bagId: In(bagList.map(v => v.id)),
+            },
+          }),
+        ])
+      : [[], []];
     const unpackBoxInfoMap = unpackBoxInfoList.reduce((pre, cur) => {
+      if (!pre[cur.bagId]) pre[cur.bagId] = [];
+      pre[cur.bagId].push(cur);
+      return pre;
+    }, {});
+    const unpackRecordInfoMap = unpackRecordList.reduce((pre, cur) => {
       if (!pre[cur.bagId]) pre[cur.bagId] = [];
       pre[cur.bagId].push(cur);
       return pre;
@@ -137,8 +184,64 @@ export class BagService {
       return {
         ...v,
         type,
-        unpackBoxInfoList: unpackBoxInfoMap[v.id],
+        unpackBoxInfoList: unpackBoxInfoMap[v.id] || [],
+        unpackRecordList: unpackRecordInfoMap[v.id] || [],
+        minIndex: minBagId[0].min || 0,
       };
     });
+  }
+
+  async uploadBagRegisterInfo(bagRegisterInfoDto: BagRegisterInfoDto, user: Account, bagUserPic: any) {
+    const { status, bagId, bagUserPhone, bagUserName, unpackCategoryList } = bagRegisterInfoDto;
+    const bagInfo = await this.bagRepository.findOne({ id: bagId });
+    if (!bagInfo || bagInfo.status !== BagStatus.initial) throw new HttpException('包裹不存在', 400);
+    // todo 图片上传的是二进制数据，需要转存到服务器
+    const pathList = ['core', 'unpack', 'images', `${bagInfo.device}`];
+    let serverPath = '';
+    for (const path of pathList) {
+      serverPath += `/${path}`;
+      if (!fs.existsSync(serverPath)) fs.mkdirSync(serverPath);
+    }
+    if (!fs.existsSync(serverPath + '/user')) fs.mkdirSync(serverPath + '/user');
+    if (!fs.existsSync(serverPath + '/contraband')) fs.mkdirSync(serverPath + '/contraband');
+    const time = moment().format('YYYYMMDDHHmmss');
+    const userPicPath = `${serverPath}/user/${time}.jpg`;
+    const contractPicPath = `${serverPath}/contraband`;
+    if (bagUserPic && bagUserPic.length) {
+      fs.writeFileSync(userPicPath, Buffer.from(bagUserPic, 'base64'));
+    }
+    await this.bagRepository.update(
+      { id: bagId },
+      {
+        bagUserPhone,
+        bagUserPic: userPicPath,
+        bagUserName,
+        unpackAuditorId: user.id,
+        unpackRecordAt: new Date(),
+        status,
+        unpackAuditorName: user.username,
+      },
+    );
+    if (status === 2) {
+      const existUnpackRecord = await this.unpackRecordInfoRepository.findOne({ bagId });
+      // todo 同上，图片上传的是二进制数据，需要转存到服务器
+      if (!existUnpackRecord && unpackCategoryList.length) {
+        const saveUnpackRecordList = [];
+        for (let i = 0; i < unpackCategoryList.length; i++) {
+          const unpackCategory = unpackCategoryList[i];
+          fs.writeFileSync(
+            `${contractPicPath}/${time}_${i + 1}.jpg`,
+            Buffer.from(unpackCategory.contrabandPic, 'base64'),
+          );
+          saveUnpackRecordList.push({
+            bagId,
+            categoryName: unpackCategory.categoryName,
+            contrabandPic: `${contractPicPath}/${time}_${i + 1}.jpg`,
+            categoryId: unpackCategory.categoryId,
+          });
+        }
+        await this.unpackRecordInfoRepository.save(saveUnpackRecordList);
+      }
+    }
   }
 }

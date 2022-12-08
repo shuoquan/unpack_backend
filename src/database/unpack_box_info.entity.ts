@@ -53,4 +53,13 @@ export class UnpackBoxInfo {
     comment: '1-识别, 2-判图',
   })
   type: TypeEnum;
+
+  // @Column({
+  //   name: 'contraband_pic',
+  //   type: 'varchar',
+  //   length: 1024,
+  //   default: '',
+  //   comment: '违禁品图片路径',
+  // })
+  // contrabandPic: string;
 }

@@ -5,7 +5,8 @@ import e from 'express';
 
 bluebird.promisifyAll(net);
 // 192.168.8.177
-const server = net.createServer().listen(9530, '192.168.8.103');
+// 192.168.8.103
+const server = net.createServer().listen(9530, 'localhost');
 const userMap = new Map();
 const logger = new Logger('SOCKETSERVER');
 

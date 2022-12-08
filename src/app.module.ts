@@ -5,6 +5,9 @@ import { ConfigModule } from './module/config.module';
 import { ConfigService } from './service/config.service';
 import { BagModule } from './module/bag.module';
 import { SocketModule } from './module/socket.module';
+import { AuthModule } from './module/auth.module';
+import { UserModule } from './module/user.module';
+import { CategoryModule } from './module/category.module';
 
 const Orm = (): DynamicModule => {
   const config = new ConfigService(Path.join(__dirname, `../env/${process.env.NODE_ENV || 'development'}.env`));
@@ -22,6 +25,6 @@ const Orm = (): DynamicModule => {
 };
 
 @Module({
-  imports: [ConfigModule, BagModule, SocketModule, Orm()],
+  imports: [AuthModule, CategoryModule, UserModule, ConfigModule, BagModule, SocketModule, Orm()],
 })
 export class AppModule {}

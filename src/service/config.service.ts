@@ -20,9 +20,7 @@ export class ConfigService {
 
   private validateInput(envConfig: EnvConfig): EnvConfig {
     const envVarsSchema: Joi.ObjectSchema = Joi.object({
-      NODE_ENV: Joi.string()
-        .valid('development', 'production', 'test', 'provision')
-        .default('development'),
+      NODE_ENV: Joi.string().valid('development', 'production', 'test', 'provision').default('development'),
       PORT: Joi.number().default(3000),
 
       PG_PORT: Joi.number().required(),
@@ -30,10 +28,10 @@ export class ConfigService {
       PG_PASSWORD: Joi.string().required(),
       PG_DATABASE: Joi.string().required(),
       PG_SYNCHRONIZE: Joi.boolean().default(false),
+      JWT_SECRET: Joi.string().required(),
     });
 
-    const { error, value: validateEnvConfig } =
-      envVarsSchema.validate(envConfig);
+    const { error, value: validateEnvConfig } = envVarsSchema.validate(envConfig);
     if (error) throw new Error(`Config validation error: ${error.message}`);
     return validateEnvConfig;
   }
@@ -64,5 +62,9 @@ export class ConfigService {
 
   get pgSynchronize(): boolean {
     return Boolean(this.envConfig.PG_SYNCHRONIZE);
+  }
+
+  get jwtSecret(): string {
+    return this.envConfig.JWT_SECRET;
   }
 }

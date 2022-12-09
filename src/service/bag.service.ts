@@ -191,8 +191,17 @@ export class BagService {
     });
   }
 
-  async uploadBagRegisterInfo(bagRegisterInfoDto: BagRegisterInfoDto, user: Account, bagUserPic: any) {
-    const { status, bagId, bagUserPhone, bagUserName, unpackCategoryList } = bagRegisterInfoDto;
+  async uploadBagRegisterInfo(
+    status: number,
+    bagId: number,
+    bagUserPhone = '',
+    bagUserName = '',
+    unpackCategoryListInfo = '[]',
+    user: Account,
+    bagUserPic: any,
+  ) {
+    // const { status, bagId, bagUserPhone, bagUserName, unpackCategoryListInfo } = bagRegisterInfoDto;
+    const unpackCategoryList = JSON.parse(unpackCategoryListInfo);
     const bagInfo = await this.bagRepository.findOne({ id: bagId });
     if (!bagInfo || bagInfo.status !== BagStatus.initial) throw new HttpException('包裹不存在', 400);
     // todo 图片上传的是二进制数据，需要转存到服务器

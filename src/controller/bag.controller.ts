@@ -5,6 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { BagRegisterInfoDto } from '../dto/bagRegisterInfo.dto';
 import { UserDecorator } from '../decorator/user.decorator';
 import { Account } from '../database/account.entity';
+import { UnpackCategoryInfo } from '../interface/unpackCategoryInfo.interface';
 
 @Controller('bag')
 export class BagController {
@@ -51,11 +52,23 @@ export class BagController {
   @Post('/register')
   async uploadBagRegisterInfo(
     @Body('bagUserPic') bagUserPic,
-    @Body('') bagRegisterInfoDto: BagRegisterInfoDto,
+    @Body('bagId') bagId: number,
+    @Body('bagUserName') bagUserName: string,
+    @Body('bagUserPhone') bagUserPhone: string,
+    @Body('unpackCategoryListInfo') unpackCategoryListInfo: string,
+    @Body('status') status: number,
     @UserDecorator() user: Account,
   ) {
     // this.logger.log(JSON.stringify(bagRegisterInfoDto), '上报开包登记信息');
     // console.log(bagRegisterInfoDto, bagUserPic);
-    return this.bagService.uploadBagRegisterInfo(bagRegisterInfoDto, user, bagUserPic);
+    return this.bagService.uploadBagRegisterInfo(
+      status || 1,
+      bagId,
+      bagUserPhone || '',
+      bagUserName || '',
+      unpackCategoryListInfo || '[]',
+      user,
+      bagUserPic,
+    );
   }
 }

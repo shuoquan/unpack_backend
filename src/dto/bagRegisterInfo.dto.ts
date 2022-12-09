@@ -27,8 +27,8 @@ export class BagRegisterInfoDto {
 
   // bagUserPic: object;
 
-  @IsArray()
-  readonly unpackCategoryList: UnpackCategoryInfo[] = [];
+  // @IsString()
+  readonly unpackCategoryListInfo = '[]';
 
   @IsIn([1, 2], { message: '开包状态参数错误' })
   readonly status: number;

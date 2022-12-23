@@ -4,7 +4,7 @@ import { BagInfoDto } from '../dto/bagInfo.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { BagRegisterInfoDto } from '../dto/bagRegisterInfo.dto';
 import { UserDecorator } from '../decorator/user.decorator';
-import { Account } from '../database/account.entity';
+import { Account } from '../database/postgresql/account.entity';
 import { UnpackCategoryInfo } from '../interface/unpackCategoryInfo.interface';
 
 @Controller('bag')

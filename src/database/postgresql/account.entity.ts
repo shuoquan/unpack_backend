@@ -11,6 +11,11 @@ export enum RoleType {
   other = 1,
 }
 
+export enum PlatformType {
+  unpack = 0, // 开包台
+  audit = 1, // 判图台
+}
+
 @Entity('account')
 export class Account {
   @PrimaryGeneratedColumn()
@@ -56,4 +61,7 @@ export class Account {
   // 1.默认  2.其他
   @Column({ name: 'role_id', type: 'enum', enum: RoleType, default: 0, comment: '角色类型' })
   roleId: RoleType;
+
+  @Column({ name: 'platform_id', type: 'enum', enum: PlatformType, default: 0, comment: '平台id' })
+  platformId: PlatformType;
 }

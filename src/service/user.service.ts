@@ -1,6 +1,6 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { RoleType, AccountStatus, Account } from '../database/account.entity';
+import { RoleType, AccountStatus, Account, PlatformType } from '../database/postgresql/account.entity';
 import { Repository } from 'typeorm';
 import { CryptoService } from './crypto.service';
 import { JwtService } from '@nestjs/jwt';
@@ -25,6 +25,7 @@ export class UserService {
       userId: user.id,
       roleId: user.roleId,
       username: user.username,
+      platformId: user.platformId,
       // mobile: user.mobile,
     };
     const token = this.jwtService.sign(payload, {
@@ -38,5 +39,18 @@ export class UserService {
 
   async findOneByUsername(username: string): Promise<Account | undefined> {
     return await this.userRepository.findOne({ username });
+  }
+
+  async getUserList(page = 0, pageSize = 1) {
+    if (page < 0 || pageSize <= 0) throw new HttpException('参数错误', 403);
+    return this.userRepository.find({
+      select: ['id', 'username'],
+      where: {
+        status: AccountStatus.passed,
+        platformId: PlatformType.audit,
+      },
+      skip: page * pageSize,
+      take: pageSize,
+    });
   }
 }

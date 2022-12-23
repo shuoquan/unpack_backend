@@ -4,7 +4,7 @@ import { UserService } from '../service/user.service';
 import { UserController } from '../controller/user.controller';
 import { CryptoService } from '../service/crypto.service';
 import { JwtModule } from '@nestjs/jwt';
-import { Account } from '../database/account.entity';
+import { Account } from '../database/postgresql/account.entity';
 import { ConfigService } from '../service/config.service';
 
 @Module({

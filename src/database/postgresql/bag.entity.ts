@@ -186,4 +186,12 @@ export class Bag {
     comment: '包裹所属用户手机号',
   })
   bagUserPhone: string;
+
+  @Column({
+    name: 'review_auditor_id',
+    type: 'int',
+    default: 0,
+    comment: '判图员id',
+  })
+  reviewAuditorId: number;
 }

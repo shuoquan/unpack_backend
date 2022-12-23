@@ -8,4 +8,9 @@ export class UserController {
   async login(@Body('username') username: string, @Body('password') password: string) {
     return await this.userService.login(username, password);
   }
+
+  @Get('')
+  async getUserList(@Query('p') page: number, @Query('ps') pageSize: number) {
+    return await this.userService.getUserList(page, pageSize);
+  }
 }

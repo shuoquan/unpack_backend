@@ -8,7 +8,7 @@ import { ConfigService } from '../service/config.service';
 import { LocalStrategy } from '../strategy/local.strategy';
 import { UserModule } from './user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Account } from '../database/account.entity';
+import { Account } from '../database/postgresql/account.entity';
 
 @Module({
   imports: [

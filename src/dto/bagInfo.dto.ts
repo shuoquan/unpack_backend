@@ -58,4 +58,7 @@ export class BagInfoDto {
 
   @IsNumber()
   readonly bagId = 0;
+
+  @IsNumber()
+  readonly auditorId = 0;
 }

@@ -1,13 +1,13 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getManager, In, Repository } from 'typeorm';
-import { Bag, BagStatus } from '../database/bag.entity';
-import { TypeEnum, UnpackBoxInfo } from '../database/unpack_box_info.entity';
+import { Bag, BagStatus } from '../database/postgresql/bag.entity';
+import { TypeEnum, UnpackBoxInfo } from '../database/postgresql/unpack_box_info.entity';
 import { BagInfoDto } from '../dto/bagInfo.dto';
 import { SocketServerService } from './socketServer.service';
 import { BagRegisterInfoDto } from '../dto/bagRegisterInfo.dto';
-import { Account } from '../database/account.entity';
-import { UnpackRecordInfo } from '../database/unpack_record_info.entity';
+import { Account } from '../database/postgresql/account.entity';
+import { UnpackRecordInfo } from '../database/postgresql/unpack_record_info.entity';
 import * as fs from 'fs';
 import * as moment from 'moment';
 
@@ -38,6 +38,7 @@ export class BagService {
       videoBlockWidth,
       unpackBoxList,
       bagId,
+      auditorId,
     } = bagInfoDto;
     if (blockTimeStamp.toString().length !== 13) throw new HttpException('blockTimeStamp参数错误(长度不为13)', 400);
     if (bagCoordinate.length !== 4) throw new HttpException('包裹坐标参数错误', 400);
@@ -80,6 +81,7 @@ export class BagService {
           createAt: new Date(),
           bagCoordinate: `(${x0 || 0}, ${y0 || 0}),(${x1 || 0}, ${y1 || 0})`,
           originBagId: bagId,
+          reviewAuditorId: auditorId,
         });
         if ((unpackBoxList || []).length) {
           await manager.save(

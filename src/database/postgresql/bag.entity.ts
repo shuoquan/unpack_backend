@@ -194,4 +194,13 @@ export class Bag {
     comment: '判图员id',
   })
   reviewAuditorId: number;
+
+  @Column({
+    name: 'auditor_name',
+    type: 'varchar',
+    length: 16,
+    default: '',
+    comment: '判图员姓名',
+  })
+  auditorName: string;
 }

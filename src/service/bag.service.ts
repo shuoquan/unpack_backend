@@ -14,6 +14,8 @@ import * as moment from 'moment';
 @Injectable()
 export class BagService {
   constructor(
+    @InjectRepository(Account)
+    private readonly accountRepository: Repository<Account>,
     @InjectRepository(Bag)
     private readonly bagRepository: Repository<Bag>,
     @InjectRepository(UnpackBoxInfo)
@@ -66,6 +68,7 @@ export class BagService {
         );
         this.socketServerService.broadcastNewBagId(existBagInfo.id);
       } else {
+        const userInfo = await this.accountRepository.findOne({ id: auditorId });
         const bagInfo = await manager.save(Bag, {
           device,
           blockName,
@@ -82,6 +85,7 @@ export class BagService {
           bagCoordinate: `(${x0 || 0}, ${y0 || 0}),(${x1 || 0}, ${y1 || 0})`,
           originBagId: bagId,
           reviewAuditorId: auditorId,
+          auditorName: (userInfo || {}).username || '',
         });
         if ((unpackBoxList || []).length) {
           await manager.save(
@@ -143,7 +147,7 @@ export class BagService {
       sql += ` and bag_user_name like '%${user}%'`;
     }
     if (auditor) {
-      sql += ` and unpack_auditor_name like '%${auditor}%'`;
+      sql += ` and auditor_name like '%${auditor}%'`;
     }
     if (cat) {
       sql += ` and id in (select bag_id from unpack_record_info where category_name like '%${cat}%')`;

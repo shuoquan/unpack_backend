@@ -44,7 +44,7 @@ export class StatisticService {
         [startTime, endTime],
       ),
       this.bagRepository.query(
-        `select count(*) as cnt from bag where create_at between $1 and $2 and status = '2' ${
+        `select count(*) as cnt from bag where create_at between $1 and $2 and status != '0' ${
           auditorId ? ` and review_auditor_id = ${auditorId}` : ''
         }`,
         [new Date(startTime), new Date(endTime)],

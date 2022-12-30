@@ -59,7 +59,7 @@ export class BagController {
     @Body('status') status: number,
     @UserDecorator() user: Account,
   ) {
-    // this.logger.log(JSON.stringify(bagRegisterInfoDto), '上报开包登记信息');
+    this.logger.log(JSON.stringify({ bagId, unpackCategoryListInfo, status }), '上报开包登记信息');
     // console.log(bagRegisterInfoDto, bagUserPic);
     return this.bagService.uploadBagRegisterInfo(
       status || 1,

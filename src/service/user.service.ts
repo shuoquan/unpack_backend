@@ -47,7 +47,7 @@ export class UserService {
       select: ['id', 'username'],
       where: {
         status: AccountStatus.passed,
-        platformId: PlatformType.audit,
+        // platformId: PlatformType.audit,
       },
       skip: page * pageSize,
       take: pageSize,

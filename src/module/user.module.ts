@@ -14,7 +14,7 @@ import { ConfigService } from '../service/config.service';
       inject: [ConfigService],
       useFactory: async (cfg: ConfigService) => ({
         secret: cfg.jwtSecret,
-        signOptions: { expiresIn: '12h' },
+        signOptions: { expiresIn: '7d' },
       }),
     }),
     HttpModule,

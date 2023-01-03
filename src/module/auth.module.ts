@@ -20,7 +20,7 @@ import { Account } from '../database/postgresql/account.entity';
       inject: [ConfigService],
       useFactory: async (cfg: ConfigService) => ({
         secret: cfg.jwtSecret,
-        signOptions: { expiresIn: '12h' },
+        signOptions: { expiresIn: '7d' },
       }),
     }),
   ],

@@ -29,7 +29,7 @@ export class UserService {
       // mobile: user.mobile,
     };
     const token = this.jwtService.sign(payload, {
-      expiresIn: '12h',
+      expiresIn: '7d',
     });
     return {
       user: payload,

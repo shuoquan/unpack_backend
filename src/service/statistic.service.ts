@@ -29,9 +29,12 @@ export class StatisticService {
 
   async getStatisticData(startTime: number, endTime: number, auditorId = 0) {
     if (!startTime || !endTime) throw new HttpException('参数错误', 400);
+    const dayCnt = (endTime - startTime) / 86400000;
+    const ratio = dayCnt >= 7 ? 1 : 7;
     // [旅客过包数, 实际开包数]
     const [
       passengerBagCnt,
+      historyPassengerBagCnt,
       actualUnpackBagCnt,
       registerContrabandCnt,
       auditorUnpackBagCnt,
@@ -42,6 +45,10 @@ export class StatisticService {
       this.originBagRepository.query(
         `SELECT COUNT(*) AS cnt FROM bag WHERE image_id in (SELECT id FROM image WHERE time BETWEEN ? AND ?)`,
         [startTime, endTime],
+      ),
+      this.originBagRepository.query(
+        `SELECT COUNT(*) AS cnt FROM bag WHERE image_id in (SELECT id FROM image WHERE time BETWEEN ? AND ?)`,
+        [startTime - dayCnt * 86400000 * ratio, startTime],
       ),
       this.bagRepository.query(
         `select count(*) as cnt from bag where create_at between $1 and $2 and status != '0' ${
@@ -82,6 +89,7 @@ export class StatisticService {
     ]);
     return {
       passengerBagCnt: parseInt(passengerBagCnt[0].cnt),
+      historyPassengerBagCnt: Math.ceil(parseInt(historyPassengerBagCnt[0].cnt) / ratio),
       actualUnpackBagCnt: parseInt(actualUnpackBagCnt[0].cnt),
       registerContrabandCnt: parseInt(registerContrabandCnt[0].cnt),
       auditorUnpackBagCnt: parseInt(auditorUnpackBagCnt[0].cnt),
@@ -91,7 +99,7 @@ export class StatisticService {
     };
   }
 
-  // typeId: 0-开包图片 1-收藏图片 2-漏开图片 3-误开图片
+  // typeId: 0-开包图片 1-收藏图片 2-漏开图片 3-误开图片 4-智能识别推荐 5-智能识别误报 6-智能识别漏报
   async getStatisticImageList(startTime, endTime, page = 0, pageSize = 1, auditorId = 0, typeId = 0) {
     let sql = `select *, b.id id from bag b inner join image i on b.image_id = i.id where i.time between ? and ?`;
     const params = [startTime, endTime];
@@ -107,6 +115,12 @@ export class StatisticService {
       sql += ` and b.danger = 1 and b.user_check = 0`;
     } else if (typeId === 3) {
       sql += ` and b.danger = 0 and b.user_check = 1`;
+    } else if (typeId === 4) {
+      sql += ` and b.xman_check = 1`;
+    } else if (typeId === 5) {
+      sql += ` and b.danger = 0 and b.xman_check = 1`;
+    } else if (typeId === 6) {
+      sql += ` and b.danger = 1 and b.xman_check = 0`;
     }
     sql += ` order by b.id desc limit ?, ?`;
     params.push(page * pageSize, pageSize);
@@ -126,16 +140,19 @@ export class StatisticService {
       pre[anno.bagId].push(anno);
       return pre;
     }, {});
-    return bagList.map(bag => {
-      const coordinate = JSON.parse(bag.box || '[]');
-      return {
-        ...bag,
-        annotations: annoMap[bag.id] || [],
-        x0: coordinate.length === 4 ? Math.min(coordinate[0], coordinate[2]) : 0,
-        y0: coordinate.length === 4 ? Math.min(coordinate[1], coordinate[3]) : 0,
-        x1: coordinate.length === 4 ? Math.max(coordinate[0], coordinate[2]) : bag.width,
-        y1: coordinate.length === 4 ? Math.max(coordinate[1], coordinate[3]) : bag.height,
-      };
-    });
+    return {
+      typeId,
+      bagList: bagList.map(bag => {
+        const coordinate = JSON.parse(bag.box || '[]');
+        return {
+          ...bag,
+          annotations: annoMap[bag.id] || [],
+          x0: coordinate.length === 4 ? Math.min(coordinate[0], coordinate[2]) : 0,
+          y0: coordinate.length === 4 ? Math.min(coordinate[1], coordinate[3]) : 0,
+          x1: coordinate.length === 4 ? Math.max(coordinate[0], coordinate[2]) : bag.width,
+          y1: coordinate.length === 4 ? Math.max(coordinate[1], coordinate[3]) : bag.height,
+        };
+      }),
+    };
   }
 }

@@ -43,7 +43,7 @@ export class SocketServerService {
       const [name, socket] = [entry[0], entry[1]];
       if (socket) {
         logger.log(`BROADCAST: ${name}, ${bagId}`);
-        socket.write(`${bagId}`);
+        socket.write(`${bagId}\n`);
       }
     }
   }

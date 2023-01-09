@@ -31,10 +31,12 @@ export class StatisticService {
     if (!startTime || !endTime) throw new HttpException('参数错误', 400);
     const dayCnt = (endTime - startTime) / 86400000;
     const ratio = dayCnt >= 7 ? 1 : 7;
+    const curDayTime = new Date(new Date().toLocaleDateString()).getTime();
     // [旅客过包数, 实际开包数]
     const [
       passengerBagCnt,
       historyPassengerBagCnt,
+      averagePassengerBagCnt,
       actualUnpackBagCnt,
       registerContrabandCnt,
       auditorUnpackBagCnt,
@@ -49,6 +51,10 @@ export class StatisticService {
       this.originBagRepository.query(
         `SELECT COUNT(*) AS cnt FROM bag WHERE image_id in (SELECT id FROM image WHERE time BETWEEN ? AND ?)`,
         [startTime - dayCnt * 86400000 * ratio, startTime],
+      ),
+      this.originBagRepository.query(
+        `SELECT COUNT(*) AS cnt FROM bag WHERE image_id in (SELECT id FROM image WHERE time BETWEEN ? AND ?)`,
+        [curDayTime - 86400000 * 14, curDayTime],
       ),
       this.bagRepository.query(
         `select count(*) as cnt from bag where create_at between $1 and $2 and status != '0' ${
@@ -90,6 +96,7 @@ export class StatisticService {
     return {
       passengerBagCnt: parseInt(passengerBagCnt[0].cnt),
       historyPassengerBagCnt: Math.ceil(parseInt(historyPassengerBagCnt[0].cnt) / ratio),
+      averagePassengerBagCnt: Math.ceil(parseInt(averagePassengerBagCnt[0].cnt) / 14),
       actualUnpackBagCnt: parseInt(actualUnpackBagCnt[0].cnt),
       registerContrabandCnt: parseInt(registerContrabandCnt[0].cnt),
       auditorUnpackBagCnt: parseInt(auditorUnpackBagCnt[0].cnt),
